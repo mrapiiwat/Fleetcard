@@ -14,14 +14,14 @@ Fleetcard Manager is a backend service built with Go and Echo framework, designe
 ## Folder Structure
 
 Fleetcard/
-├── cmd/ # Entry point (main.go)
-├── config/ # Load .env and app config
-├── controllers/ # Download from SFTP
-├── db/ # Database models and connection
-├── services/ # Decrypt, extract, and parse logic
-├── .env # Environment variables
-├── docker-compose.yml
-├── go.mod / go.sum
+├── cmd/ # Entry point (main.go)\n
+├── config/ # Load .env and app config\n
+├── controllers/ # Download from SFTP\n
+├── db/ # Database models and connection\n
+├── services/ # Decrypt, extract, and parse logic\n
+├── .env # Environment variables\n
+├── docker-compose.yml\n
+├── go.mod / go.sum\n
 
 ## How to Run
 
