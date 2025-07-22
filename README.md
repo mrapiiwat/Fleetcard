@@ -27,23 +27,23 @@ Fleetcard/
 
 1. Install [GPG](https://gnupg.org) and import your private key.
 2. Put `.gpg` files in the SFTP server folder.
-3. Fill `.env` file with credentials and config:
-
-DB_HOST=localhost
-DB_PORT=15432
-DB_USER=postgres
-DB_PASSWORD=yourpassword
-DB_NAME=fleetcarddb
-DATE_FORMAT=02/01/2006
-
-SFTP_HOST=...
-SFTP_PORT=22
-SFTP_USER=...
-SFTP_PASSWORD=...
-SFTP_REMOTE_DIR=/fleetcard
-
-4. Run the app: go run ./cmd/main.go
-
+3. Fill `.env` file with credentials and config:  
+  
+DB_HOST=localhost  
+DB_PORT=15432  
+DB_USER=postgres  
+DB_PASSWORD=yourpassword  
+DB_NAME=fleetcarddb  
+DATE_FORMAT=02/01/2006  
+  
+SFTP_HOST=YOUR_SFTP_HOST   
+SFTP_PORT=22  
+SFTP_USER=YOUR_SFTP_USER  
+SFTP_PASSWORD=YOUR_SFTP_PASSWORD  
+SFTP_REMOTE_DIR=/fleetcard  
+  
+4. Run the app: go run ./cmd/main.go  
+  
 # Tech Stack
 
 - Language: Go
