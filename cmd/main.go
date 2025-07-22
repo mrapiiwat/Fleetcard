@@ -1,14 +1,21 @@
 package main
 
 import (
+	"log"
+
 	"github.com/fleetcard/config"
+	"github.com/fleetcard/controllers"
 	"github.com/fleetcard/db"
 )
 
 func main() {
 	cfg, err := config.LoadConfig()
 	if err != nil {
-		panic("Failed to load configuration: " + err.Error())
+		log.Fatalf("Failed to load config: %v", err)
 	}
-	db.Connect(cfg)
+
+	connectedDB := db.Connect(cfg)
+	db.DB = connectedDB
+
+	controllers.DownloadAllGPGFromSFTP()
 }
