@@ -13,7 +13,7 @@ Fleetcard Manager is a backend service built with Go and Echo framework, designe
 
 ## Folder Structure
 
-Fleetcard/
+Fleetcard/  
 ├── cmd/ # Entry point (main.go)  
 ├── config/ # Load .env and app config  
 ├── controllers/ # Download from SFTP  
