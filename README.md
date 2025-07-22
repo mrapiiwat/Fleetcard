@@ -46,9 +46,9 @@ SFTP_REMOTE_DIR=/fleetcard
 
 # Tech Stack
 
-Language: Go
-Framework: Echo
-ORM: GORM
-Database: PostgreSQL
-File Transfer: SFTP
-Decryption: GPG
+- Language: Go
+- Framework: Echo
+- ORM: GORM
+- Database: PostgreSQL
+- File Transfer: SFTP
+- Decryption: GPG
