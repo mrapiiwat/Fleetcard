@@ -1,25 +1,24 @@
 package controllers
 
 import (
-	"bytes"
 	"fmt"
-	"io"
 	"log"
 	"os"
 	"strings"
 	"time"
 
-	"github.com/fleetcard/db"
+	"github.com/fleetcard/services"
 	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
 )
 
-func DownloadAllGPGFromSFTP() {
+// เชื่อมไปเซิร์ฟเวอร์ SFTP, loops หา .gpg files ใน /inbound,
+func ProcessAllInboundFiles(dateFormat string) {
 	sftpHost := os.Getenv("SFTP_HOST")
 	sftpPort := os.Getenv("SFTP_PORT")
 	sftpUser := os.Getenv("SFTP_USER")
 	sftpPassword := os.Getenv("SFTP_PASSWORD")
-	remoteDir := os.Getenv("SFTP_REMOTE_DIR")
+	remoteInbound := os.Getenv("SFTP_REMOTE_INBOUND_DIR")
 
 	config := &ssh.ClientConfig{
 		User: sftpUser,
@@ -42,48 +41,23 @@ func DownloadAllGPGFromSFTP() {
 	}
 	defer client.Close()
 
-	files, err := client.ReadDir(remoteDir)
+	files, err := client.ReadDir(remoteInbound)
 	if err != nil {
-		log.Fatalf("Failed to read dir %s: %v", remoteDir, err)
+		log.Fatalf("Failed to read dir %s: %v", remoteInbound, err)
 	}
 
 	for _, file := range files {
 		if strings.HasSuffix(file.Name(), ".gpg") {
-			fullPath := remoteDir + "/" + file.Name()
-			fmt.Println("Downloading:", fullPath)
+			log.Printf("Found file: %s", file.Name())
 
-			var existing db.EncryptedReport
-			if err := db.DB.Where("file_name = ?", file.Name()).First(&existing).Error; err == nil {
-				fmt.Println("Skip already existing:", file.Name())
-				continue
-			}
-
-			remoteFile, err := client.Open(fullPath)
+			err := services.DecryptAndExtract(file.Name(), dateFormat)
 			if err != nil {
-				log.Println("Open file error:", err)
-				continue
-			}
-
-			var buf bytes.Buffer
-			_, err = io.Copy(&buf, remoteFile)
-			remoteFile.Close()
-			if err != nil {
-				log.Println("Read file error:", err)
-				continue
-			}
-
-			report := db.EncryptedReport{
-				FileName:  file.Name(),
-				FileData:  buf.Bytes(),
-				CreatedAt: time.Now(),
-			}
-
-			result := db.DB.Create(&report)
-			if result.Error != nil {
-				log.Println("Insert DB error:", result.Error)
+				log.Printf("Failed: %s → %v", file.Name(), err)
 			} else {
-				fmt.Println("Inserted:", file.Name())
+				log.Printf("Success: %s", file.Name())
 			}
+
+			time.Sleep(1 * time.Second)
 		}
 	}
 }

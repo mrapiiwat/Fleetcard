@@ -3,90 +3,122 @@ package services
 import (
 	"archive/zip"
 	"bufio"
-	"errors"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
-	"path/filepath"
+	"path"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/fleetcard/db"
+	"github.com/pkg/sftp"
+	"golang.org/x/crypto/ssh"
 )
 
-func DecryptAndExtractCSV(report db.EncryptedReport, dateFormat string) ([]db.Transaction, error) {
-	tmpDir := "./tmp"
-	os.MkdirAll(tmpDir, os.ModePerm)
+func DecryptAndExtract(fileName, dateFormat string) error {
+	sftpHost := os.Getenv("SFTP_HOST")
+	sftpPort := os.Getenv("SFTP_PORT")
+	sftpUser := os.Getenv("SFTP_USER")
+	sftpPassword := os.Getenv("SFTP_PASSWORD")
+	remoteInbound := os.Getenv("SFTP_REMOTE_INBOUND_DIR")
+	remoteOutbound := os.Getenv("SFTP_REMOTE_OUTBOUND_DIR")
 
-	// เขียนไฟล์ .gpg ชั่วคราว
-	gpgPath := filepath.Join(tmpDir, report.FileName)
-	if err := os.WriteFile(gpgPath, report.FileData, 0644); err != nil {
-		return nil, fmt.Errorf("write gpg failed: %v", err)
+	// Connect SFTP
+	config := &ssh.ClientConfig{
+		User:            sftpUser,
+		Auth:            []ssh.AuthMethod{ssh.Password(sftpPassword)},
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+		Timeout:         5 * time.Second,
 	}
 
-	// ถอดรหัส .gpg เป็น .zip
-	zipPath := strings.TrimSuffix(gpgPath, ".gpg")
-	err := exec.Command("gpg", "--batch", "--yes", "--output", zipPath, "--decrypt", gpgPath).Run()
+	conn, err := ssh.Dial("tcp", fmt.Sprintf("%s:%s", sftpHost, sftpPort), config)
 	if err != nil {
-		return nil, fmt.Errorf("decrypt gpg failed: %v", err)
+		return fmt.Errorf("SSH dial failed: %v", err)
+	}
+	defer conn.Close()
+
+	client, err := sftp.NewClient(conn)
+	if err != nil {
+		return fmt.Errorf("SFTP client failed: %v", err)
+	}
+	defer client.Close()
+
+	// โหลด .gpg จาก inbound
+	remotePath := path.Join(remoteInbound, fileName)
+	localTmp := "./tmp"
+	os.MkdirAll(localTmp, os.ModePerm)
+	localGpgPath := path.Join(localTmp, fileName)
+
+	srcFile, err := client.Open(remotePath)
+	if err != nil {
+		return fmt.Errorf("cannot open remote file: %v", err)
+	}
+	defer srcFile.Close()
+
+	dstFile, err := os.Create(localGpgPath)
+	if err != nil {
+		return fmt.Errorf("cannot create local file: %v", err)
+	}
+	defer dstFile.Close()
+
+	if _, err := io.Copy(dstFile, srcFile); err != nil {
+		return fmt.Errorf("failed to download .gpg: %v", err)
 	}
 
-	// แตก zip
-	r, err := zip.OpenReader(zipPath)
+	dstFile.Close()
+	os.Chmod(localGpgPath, 0644)
+
+	// Decrypt .gpg เป็น .zip
+	localZipPath := strings.TrimSuffix(localGpgPath, ".gpg")
+	cmd := exec.Command("gpg", "--batch", "--yes", "--output", localZipPath, "--decrypt", localGpgPath)
+	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return nil, fmt.Errorf("zip open failed: %v", err)
+		return fmt.Errorf("GPG decrypt failed: %v\nOutput: %s", err, string(output))
+	}
+
+	// Unzip และอ่าน .txt
+	r, err := zip.OpenReader(localZipPath)
+	if err != nil {
+		return fmt.Errorf("zip open failed: %v", err)
 	}
 	defer r.Close()
 
-	var dataFilePath string
+	var txtPath string
 	for _, f := range r.File {
-		if strings.HasSuffix(f.Name, ".csv") || strings.HasSuffix(f.Name, ".txt") {
-			dataFilePath = filepath.Join(tmpDir, f.Name)
-			rc, err := f.Open()
-			if err != nil {
-				return nil, err
-			}
+		if strings.HasSuffix(f.Name, ".txt") || strings.HasSuffix(f.Name, ".csv") {
+			txtPath = path.Join(localTmp, f.Name)
+			os.MkdirAll(path.Dir(txtPath), os.ModePerm)
+
+			rc, _ := f.Open()
 			defer rc.Close()
-
-			os.MkdirAll(filepath.Dir(dataFilePath), os.ModePerm)
-
-			out, err := os.Create(dataFilePath)
-			if err != nil {
-				return nil, err
-			}
+			out, _ := os.Create(txtPath)
 			defer out.Close()
-
-			_, err = io.Copy(out, rc)
-			if err != nil {
-				return nil, err
-			}
+			io.Copy(out, rc)
 			break
 		}
 	}
-	if dataFilePath == "" {
-		return nil, errors.New("no .csv or .txt file found in zip")
+	if txtPath == "" {
+		return fmt.Errorf("no .txt/.csv file found in zip")
 	}
 
-	// อ่านข้อมูลไฟล์ที่แยกออกมา และแปลงเป็น Transaction
-	file, err := os.Open(dataFilePath)
+	// Parse txt []Transaction
+	file, err := os.Open(txtPath)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer file.Close()
 
-	scanner := bufio.NewScanner(file)
 	var txs []db.Transaction
+	scanner := bufio.NewScanner(file)
 	lineNum := 0
-
 	for scanner.Scan() {
 		line := scanner.Text()
 		lineNum++
 		if lineNum == 1 {
-			continue // ข้าม header
+			continue
 		}
-
 		row := strings.Split(line, "|")
 		if len(row) < 26 {
 			continue
@@ -133,21 +165,21 @@ func DecryptAndExtractCSV(report db.EncryptedReport, dateFormat string) ([]db.Tr
 		}
 		txs = append(txs, tx)
 	}
-
 	if err := scanner.Err(); err != nil {
-		return nil, err
+		return err
 	}
 
-	return txs, nil
-}
-
-func SaveTransactions(txs []db.Transaction) error {
-	if len(txs) == 0 {
-		return nil
+	// บันทึกไปยังฐานข้อมูล
+	if len(txs) > 0 {
+		if err := db.DB.CreateInBatches(txs, 100).Error; err != nil {
+			return fmt.Errorf("failed to save transactions: %v", err)
+		}
 	}
 
-	if err := db.DB.CreateInBatches(txs, 100).Error; err != nil {
-		return fmt.Errorf("failed to save transactions: %v", err)
+	// ย้าย .gpg ไป /outbound
+	remoteDest := path.Join(remoteOutbound, fileName)
+	if err := client.Rename(remotePath, remoteDest); err != nil {
+		return fmt.Errorf("failed to move file to outbound: %v", err)
 	}
 
 	return nil
