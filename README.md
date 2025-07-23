@@ -17,6 +17,7 @@
   
 ## วิธีใช้งาน  
 ### 1. ติดตั้งระบบที่ใช้ถอดรหัส .gpg และ insert private key เข้าไปยัง device
+สำหรับ Window: https://gpg4win.org/
 ### 2. โคลนโปรเจกต์
 git clone https://github.com/mrapiiwat/Fleetcard.git  
 ### 3. สร้างไฟล์ .env
