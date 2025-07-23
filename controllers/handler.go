@@ -46,6 +46,8 @@ func ProcessAllInboundFiles(dateFormat string) {
 		log.Fatalf("Failed to read dir %s: %v", remoteInbound, err)
 	}
 
+	found := 0
+
 	for _, file := range files {
 		if strings.HasSuffix(file.Name(), ".gpg") {
 			log.Printf("Found file: %s", file.Name())
@@ -59,5 +61,8 @@ func ProcessAllInboundFiles(dateFormat string) {
 
 			time.Sleep(1 * time.Second)
 		}
+	}
+	if found == 0 {
+		log.Printf("No .gpg files found in directory: %s", remoteInbound)
 	}
 }
