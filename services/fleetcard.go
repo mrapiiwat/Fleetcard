@@ -72,7 +72,16 @@ func DecryptAndExtract(fileName, dateFormat string) error {
 
 	// Decrypt .gpg เป็น .zip
 	localZipPath := strings.TrimSuffix(localGpgPath, ".gpg")
-	cmd := exec.Command("gpg", "--batch", "--yes", "--output", localZipPath, "--decrypt", localGpgPath)
+	passphrase := os.Getenv("GPG_PASSPHRASE")
+	cmd := exec.Command(
+		"gpg",
+		"--batch",
+		"--yes",
+		"--passphrase", passphrase,
+		"--pinentry-mode", "loopback",
+		"--output", localZipPath,
+		"--decrypt", localGpgPath,
+	)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("GPG decrypt failed: %v\nOutput: %s", err, string(output))
