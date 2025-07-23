@@ -40,13 +40,6 @@ type Transaction struct {
 	FuelBrand              string    `gorm:"column:fuel_brand" json:"fuel_brand"`
 }
 
-type EncryptedReport struct {
-	ID        uint   `gorm:"primaryKey"`
-	FileName  string `gorm:"not null"`
-	FileData  []byte
-	CreatedAt time.Time
-}
-
 func Connect(cfg *config.Config) *gorm.DB {
 	dsn := "host=" + cfg.DbHost + " user=" + cfg.DbUser + " password=" + cfg.DbPass + " dbname=" + cfg.DbName + " port=" + cfg.DbPort + " sslmode=disable TimeZone=Asia/Bangkok"
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
@@ -54,7 +47,7 @@ func Connect(cfg *config.Config) *gorm.DB {
 		log.Fatalf("Error connecting to the database: %v", err)
 	}
 
-	db.AutoMigrate(&Transaction{}, &EncryptedReport{})
+	db.AutoMigrate(&Transaction{})
 
 	return db
 }
