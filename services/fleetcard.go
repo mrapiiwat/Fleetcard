@@ -4,20 +4,26 @@ import (
 	"archive/zip"
 	"bufio"
 	"fmt"
+	"github.com/fleetcard/db"
+	"github.com/joho/godotenv"
+	"github.com/pkg/sftp"
+	"golang.org/x/crypto/ssh"
 	"io"
+	"log"
 	"os"
 	"os/exec"
 	"path"
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/fleetcard/db"
-	"github.com/pkg/sftp"
-	"golang.org/x/crypto/ssh"
 )
 
 func DecryptAndExtract(fileName, dateFormat string) error {
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
 	sftpHost := os.Getenv("SFTP_HOST")
 	sftpPort := os.Getenv("SFTP_PORT")
 	sftpUser := os.Getenv("SFTP_USER")
