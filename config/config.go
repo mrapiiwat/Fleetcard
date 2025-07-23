@@ -7,13 +7,14 @@ import (
 )
 
 type Config struct {
-	Port       string
-	DbHost     string
-	DbPort     string
-	DbUser     string
-	DbPass     string
-	DbName     string
-	DateFormat string
+	Port          string
+	DbHost        string
+	DbPort        string
+	DbUser        string
+	DbPass        string
+	DbName        string
+	DateFormat    string
+	GpgPassphrase string
 }
 
 func LoadConfig() (*Config, error) {
@@ -23,12 +24,13 @@ func LoadConfig() (*Config, error) {
 	}
 
 	return &Config{
-		Port:       os.Getenv("PORT"),
-		DbHost:     os.Getenv("DB_HOST"),
-		DbPort:     os.Getenv("DB_PORT"),
-		DbUser:     os.Getenv("DB_USER"),
-		DbPass:     os.Getenv("DB_PASSWORD"),
-		DbName:     os.Getenv("DB_NAME"),
-		DateFormat: os.Getenv("DATE_FORMAT"),
+		Port:          os.Getenv("PORT"),
+		DbHost:        os.Getenv("DB_HOST"),
+		DbPort:        os.Getenv("DB_PORT"),
+		DbUser:        os.Getenv("DB_USER"),
+		DbPass:        os.Getenv("DB_PASSWORD"),
+		DbName:        os.Getenv("DB_NAME"),
+		DateFormat:    os.Getenv("DATE_FORMAT"),
+		GpgPassphrase: os.Getenv("GPG_PASSPHRASE"),
 	}, nil
 }

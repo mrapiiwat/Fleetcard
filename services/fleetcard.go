@@ -72,7 +72,13 @@ func DecryptAndExtract(fileName, dateFormat string) error {
 
 	// Decrypt .gpg เป็น .zip
 	localZipPath := strings.TrimSuffix(localGpgPath, ".gpg")
+
 	passphrase := os.Getenv("GPG_PASSPHRASE")
+
+	if passphrase == "" {
+		return fmt.Errorf("GPG_PASSPHRASE is not set")
+	}
+
 	cmd := exec.Command(
 		"gpg",
 		"--batch",
@@ -133,7 +139,10 @@ func DecryptAndExtract(fileName, dateFormat string) error {
 			continue
 		}
 
-		settleDate, _ := time.Parse(dateFormat, row[6])
+		settleDate, err := time.Parse(dateFormat, row[6])
+		if err != nil {
+			continue
+		}
 		transDate, _ := time.Parse(dateFormat, row[7])
 		liter, _ := strconv.ParseFloat(row[12], 64)
 		price, _ := strconv.ParseFloat(row[13], 64)

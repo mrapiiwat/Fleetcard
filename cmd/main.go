@@ -14,7 +14,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to load config: %v", err)
 	}
-
+	
 	db.DB = db.Connect(cfg)
 
 	controllers.ProcessAllInboundFiles(cfg.DateFormat)
