@@ -200,5 +200,11 @@ func DecryptAndExtract(fileName, dateFormat string) error {
 		return fmt.Errorf("failed to move file to outbound: %v", err)
 	}
 
+	// ลบไฟล์ใน tmp
+	err = os.RemoveAll(localTmp)
+	if err != nil {
+		return fmt.Errorf("failed to clean up tmp directory: %v", err)
+	}
+
 	return nil
 }
