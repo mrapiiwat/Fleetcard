@@ -41,11 +41,15 @@ func ProcessAllInboundFiles(dateFormat string) {
 	}
 	defer client.Close()
 
+	// หา directory inbound
 	files, err := client.ReadDir(remoteInbound)
 	if err != nil {
 		log.Fatalf("Failed to read dir %s: %v", remoteInbound, err)
 	}
 
+	found := 0
+
+	// loop หาไฟล์ .gpg
 	for _, file := range files {
 		if strings.HasSuffix(file.Name(), ".gpg") {
 			log.Printf("Found file: %s", file.Name())
@@ -59,5 +63,10 @@ func ProcessAllInboundFiles(dateFormat string) {
 
 			time.Sleep(1 * time.Second)
 		}
+	}
+
+	//ถ้าไม่เจอไฟล์ .gpg ใน directory ให้แจ้งเตือน
+	if found == 0 {
+		log.Fatalf("No .gpg files found in directory: %s", remoteInbound)
 	}
 }
