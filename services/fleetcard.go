@@ -51,7 +51,7 @@ func DecryptAndExtract(fileName, dateFormat string) error {
 	}
 	defer client.Close()
 
-	// โหลด .gpg จาก inbound
+	//โหลด .gpg จาก inbound
 	remotePath := path.Join(remoteInbound, fileName)
 	localTmp := "./tmp"
 	os.MkdirAll(localTmp, os.ModePerm)
@@ -67,20 +67,18 @@ func DecryptAndExtract(fileName, dateFormat string) error {
 	if err != nil {
 		return fmt.Errorf("cannot create local file: %v", err)
 	}
-	defer dstFile.Close()
-
 	if _, err := io.Copy(dstFile, srcFile); err != nil {
+		dstFile.Close()
 		return fmt.Errorf("failed to download .gpg: %v", err)
 	}
-
 	dstFile.Close()
 	os.Chmod(localGpgPath, 0644)
 
 	// Decrypt .gpg เป็น .zip
 	localZipPath := strings.TrimSuffix(localGpgPath, ".gpg")
 
+	fmt.Println("PASS:", os.Getenv("GPG_PASSPHRASE"))
 	passphrase := os.Getenv("GPG_PASSPHRASE")
-
 	if passphrase == "" {
 		return fmt.Errorf("GPG_PASSPHRASE is not set")
 	}
@@ -99,7 +97,7 @@ func DecryptAndExtract(fileName, dateFormat string) error {
 		return fmt.Errorf("GPG decrypt failed: %v\nOutput: %s", err, string(output))
 	}
 
-	// Unzip และอ่าน .txt
+	// Unzip อ่าน .txt
 	r, err := zip.OpenReader(localZipPath)
 	if err != nil {
 		return fmt.Errorf("zip open failed: %v", err)
@@ -112,27 +110,38 @@ func DecryptAndExtract(fileName, dateFormat string) error {
 			txtPath = path.Join(localTmp, f.Name)
 			os.MkdirAll(path.Dir(txtPath), os.ModePerm)
 
-			rc, _ := f.Open()
-			defer rc.Close()
-			out, _ := os.Create(txtPath)
-			defer out.Close()
-			io.Copy(out, rc)
+			rc, err := f.Open()
+			if err != nil {
+				return fmt.Errorf("cannot open zipped file: %v", err)
+			}
+			out, err := os.Create(txtPath)
+			if err != nil {
+				rc.Close()
+				return fmt.Errorf("cannot create txt file: %v", err)
+			}
+			if _, err := io.Copy(out, rc); err != nil {
+				rc.Close()
+				out.Close()
+				return fmt.Errorf("cannot copy txt: %v", err)
+			}
+			rc.Close()
+			out.Close()
 			break
 		}
 	}
+	r.Close()
+
 	if txtPath == "" {
 		return fmt.Errorf("no .txt/.csv file found in zip")
 	}
 
-	// Parse txt []Transaction
 	file, err := os.Open(txtPath)
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	scanner := bufio.NewScanner(file)
 
 	var txs []db.Transaction
-	scanner := bufio.NewScanner(file)
 	lineNum := 0
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -190,20 +199,28 @@ func DecryptAndExtract(fileName, dateFormat string) error {
 		txs = append(txs, tx)
 	}
 	if err := scanner.Err(); err != nil {
+		file.Close()
 		return err
 	}
+	file.Close()
 
-	// บันทึกไปยังฐานข้อมูล
+	// บันทึกไปฐานข้อมูล
 	if len(txs) > 0 {
 		if err := db.DB.CreateInBatches(txs, 100).Error; err != nil {
 			return fmt.Errorf("failed to save transactions: %v", err)
 		}
 	}
 
-	// ย้าย .gpg ไป /outbound
+	// ย้ายไฟล์จาก inbound ไป outbound
 	remoteDest := path.Join(remoteOutbound, fileName)
 	if err := client.Rename(remotePath, remoteDest); err != nil {
 		return fmt.Errorf("failed to move file to outbound: %v", err)
+	}
+
+	// ลบไฟล์ใน tmp
+	err = os.RemoveAll(localTmp)
+	if err != nil {
+		return fmt.Errorf("failed to clean up tmp directory: %v", err)
 	}
 
 	return nil
