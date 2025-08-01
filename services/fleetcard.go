@@ -45,7 +45,7 @@ func DecryptAndExtract(fileName, dateFormat string) error {
 	}
 	defer client.Close()
 
-	//โหลด .gpg จาก inbound
+	//โหลด .gpg จาก inbound และสร้าง local directory สำหรับเก็บไฟล์ชั่วคราว
 	remotePath := path.Join(remoteInbound, fileName)
 	localTmp := "./tmp"
 	os.MkdirAll(localTmp, os.ModePerm)
