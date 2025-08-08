@@ -16,11 +16,9 @@
 ---
   
 ## วิธีใช้งาน  
-### 1. ติดตั้งระบบที่ใช้ถอดรหัส .gpg และ insert private key เข้าไปยัง device
-สำหรับ Window: https://gpg4win.org/
-### 2. โคลนโปรเจกต์
+### 1. โคลนโปรเจกต์
 git clone https://github.com/mrapiiwat/Fleetcard.git  
-### 3. สร้างไฟล์ .env
+### 2. สร้างไฟล์ .env
 DB_HOST=localhost  
 DB_PORT=15432  
 DB_USER=postgres  
@@ -38,16 +36,16 @@ SFTP_PASSWORD=your_password
 SFTP_REMOTE_INBOUND_DIR=/inbound  
 SFTP_REMOTE_OUTBOUND_DIR=/outbound  
 GPG_PRIVATE_KEY_PATH=./keys/*your-private-key*
-### 4. รัน PostgreSQL ด้วย Docker
+### 3. รัน PostgreSQL ด้วย Docker
 docker-compose up -d  
-### 5. set up private-key
+### 4. set up private-key
 - ใส่ private key ประเภท .asc ของคุณ เข้าไปยังโฟลเดอร์ keys
 - แก้ไข .env ในส่วนของ GPG_PRIVATE_KEY_PATH ให้ถูกต้องตามชื่อไฟล์ของคุณ
-### 6. สร้าง directory ใน SFTP server (สำหรับ test)
+### 5. สร้าง directory ใน SFTP server (สำหรับ test)
 - inbound
 - outbound  
 ไฟล์ .gpg ที่ต้องการถอดรหัสจะต้องอยู่ใน inbound  
-### 7. Run
+### 6. Run
 go run cmd/main.go  
 ระบบจะทำการ:  
 - เชื่อมต่อกับ SFTP server
