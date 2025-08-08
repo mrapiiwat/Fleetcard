@@ -21,6 +21,7 @@ func main() {
 	s := gocron.NewScheduler(time.Local)
 
 	// รันทุกวันเวลา 05:00 AM
+	// _, err = s.Every(1).Day()..Every(1).Minute().Do(func() {   ->   "สำหรับเทส"
 	_, err = s.Every(1).Day().At("05:00").Do(func() {
 		log.Println("Running scheduled task at 05:00 AM")
 		controllers.ProcessAllInboundFiles(cfg.DateFormat)
