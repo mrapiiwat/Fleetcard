@@ -86,6 +86,7 @@ func DecryptAndExtract(fileName, dateFormat string) error {
 		"--output", localZipPath,
 		"--decrypt", localGpgPath,
 	)
+	
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("GPG decrypt failed: %v\nOutput: %s", err, string(output))
