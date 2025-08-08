@@ -67,6 +67,6 @@ func ProcessAllInboundFiles(dateFormat string) {
 
 	//ถ้าไม่เจอไฟล์ .gpg ใน directory ให้แจ้งเตือน
 	if found == 0 {
-		log.Fatalf("No .gpg files found in directory: %s", remoteInbound)
+		log.Println("No .gpg files found in directory.")
 	}
 }
