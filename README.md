@@ -37,13 +37,17 @@ SFTP_USER=your_user
 SFTP_PASSWORD=your_password  
 SFTP_REMOTE_INBOUND_DIR=/inbound  
 SFTP_REMOTE_OUTBOUND_DIR=/outbound  
+GPG_PRIVATE_KEY_PATH=./keys/*your-private-key*
 ### 4. รัน PostgreSQL ด้วย Docker
 docker-compose up -d  
-### 5. สร้าง directory ใน SFTP server (สำหรับ test)
+### 5. set up private-key
+- ใส่ private key ประเภท .asc ของคุณ เข้าไปยังโฟลเดอร์ keys
+- แก้ไข .env ในส่วนของ GPG_PRIVATE_KEY_PATH ให้ถูกต้องตามชื่อไฟล์ของคุณ
+### 6. สร้าง directory ใน SFTP server (สำหรับ test)
 - inbound
 - outbound  
 ไฟล์ .gpg ที่ต้องการถอดรหัสจะต้องอยู่ใน inbound  
-### 6. Run
+### 7. Run
 go run cmd/main.go  
 ระบบจะทำการ:  
 - เชื่อมต่อกับ SFTP server
